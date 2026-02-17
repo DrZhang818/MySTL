@@ -1,25 +1,31 @@
-# --- 编译产物 ---
-build/
-bin/
-*.o
-*.out
-*.exe
+# --- IDEs ---
+.vscode/
+.vs/
+*.code-workspace
+*.swp
+*.swo
 
-# --- CMake 产生的临时文件 ---
+# --- Build Output ---
+[Bb]uild/
+[Bb]in/
+[Dd]ebug/
+[Rr]elease/
+*.o
+*.obj
+*.exe
+*.out
+# 具体的测试程序名
+stl_test
+
+# --- CMake ---
 CMakeCache.txt
 CMakeFiles/
 CMakeScripts/
 cmake_install.cmake
 Makefile
 install_manifest.txt
+compile_commands.json
 
-# --- IDE 配置文件 ---
-.vscode/
-.idea/
-*.swp
-*.swo
-*.code-workspace
-
-# --- 系统临时文件 ---
+# --- OS temporary files ---
 .DS_Store
 Thumbs.db
