@@ -39,6 +39,9 @@ int main() {
     static_assert(mystl::true_type::value == true, "true_type test failed");
     static_assert(mystl::false_type::value == false, "false_type test failed");
 
+    static_assert(mystl::is_same_v<mystl::conditional_t<true, int, float>, int> == true, "conditional test 1 failed");
+    static_assert(mystl::is_same_v<mystl::conditional_t<false, int, float>, float> == true, "conditional test 2 failed");
+
     static_assert(mystl::is_same_v<int, int> == true, "is_same<int, int> test failed");
     static_assert(mystl::is_same_v<int, float> == false, "is_same<int, float> test failed");
 

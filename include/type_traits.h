@@ -22,6 +22,18 @@ using bool_constant = integral_constant<bool, b>;
 using true_type = bool_constant<true>;
 using false_type = bool_constant<false>;
 
+template <bool B, typename T = void> struct enable_if {};
+template <typename T> struct enable_if<true, T>       { using type = T; };
+
+template <bool B, typename T = void>
+using enable_if_t = typename enable_if<B, T>::type;
+
+template <bool B, typename T, typename F> struct conditional      { using type = T; };
+template <typename T, typename F> struct conditional<false, T, F> { using type = F; };
+
+template <bool B, typename T, typename F>
+using conditional_t = typename conditional<B, T, F>::type;
+
 template <typename T> struct remove_reference       { using type = T; };
 template <typename T> struct remove_reference<T&>   { using type = T; };
 template <typename T> struct remove_reference<T&&>  { using type = T; };
@@ -48,6 +60,22 @@ struct remove_cv {
 
 template <typename T>
 using remove_cv_t = typename remove_cv<T>::type;
+
+template <typename T>
+using remove_cvref_t = typename remove_cv<typename remove_reference<T>::type>::type;
+
+template <typename T> struct is_pointer_helper          : false_type {};
+template <typename T> struct is_pointer_helper<T*>      : true_type {};
+
+template <typename T>
+struct is_pointer : is_pointer_helper<remove_cv_t<T>> {};
+
+template <typename T> struct is_lvalue_reference        : false_type {};
+template <typename T> struct is_lvalue_reference<T&>    : true_type {};
+
+template <typename T> struct is_rvalue_reference        : false_type {};
+template <typename T> struct is_rvalue_reference<T&&>   : true_type {};
+
 
 template <typename T>
 constexpr T&& forward(remove_reference_t<T>& arg) noexcept {
