@@ -71,6 +71,13 @@ int main() {
 
     std::cout << "Compiler Intrinsics (is_trivially_destructible) tests passed!" << std::endl;
 
+    static_assert(mystl::is_same_v<mystl::decay_t<int&>, int>, "decay<int&> should be int");
+    static_assert(mystl::is_same_v<mystl::decay_t<const int&>, int>, "decay<const int&> should be int");
+    static_assert(mystl::is_same_v<mystl::decay_t<int[5]>, int*>, "decay<int[5]> should be int*");
+    static_assert(mystl::is_same_v<mystl::decay_t<int(int)>, int(*)(int)>, "decay<int(int)> should be int(*)(int)");
+
+    std::cout << "decay tests passed!" << std::endl;
+
     std::cout << "Testing forward and move semantics..." << std::endl;
     int x = 42;
     wrapper(x);
