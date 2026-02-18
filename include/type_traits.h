@@ -37,6 +37,29 @@ using conditional_t = typename conditional<B, T, F>::type;
 template <typename...> 
 using void_t = void;
 
+using nullptr_t = decltype(nullptr);
+
+template <typename B> struct negation           : bool_constant<!bool(B::value)> {};
+
+template <typename B>
+inline constexpr bool negation_v = negation<B>::value;
+
+template <typename...> struct conjunction       : true_type {};
+template <typename B1> struct conjunction<B1>   : B1 {};
+template <typename B1, typename... Bn> 
+struct conjunction<B1, Bn...>                   : conditional_t<bool(B1::value), conjunction<Bn...>, B1> {}; 
+
+template <typename... B>
+inline constexpr bool conjunction_v = conjunction<B...>::value;
+
+template <typename...> struct disjunction       : false_type {};
+template <typename B1> struct disjunction<B1>   : B1 {};    
+template <typename B1, typename... Bn> 
+struct disjunction<B1, Bn...>                   : conditional_t<bool(B1::value), B1, disjunction<Bn...>> {};
+
+template <typename... B>
+inline constexpr bool disjunction_v = disjunction<B...>::value;
+
 template <typename T> struct remove_reference       { using type = T; };
 template <typename T> struct remove_reference<T&>   { using type = T; };
 template <typename T> struct remove_reference<T&&>  { using type = T; };
@@ -56,10 +79,8 @@ template <typename T> struct remove_volatile<volatile T>  { using type = T; };
 template <typename T>
 using remove_volatile_t = typename remove_volatile<T>::type;
 
-template <typename T>
-struct remove_cv {
-    using type = typename remove_volatile<typename remove_const<T>::type>::type;
-};
+template <typename T> 
+struct remove_cv { using type = typename remove_volatile<typename remove_const<T>::type>::type;};
 
 template <typename T>
 using remove_cv_t = typename remove_cv<T>::type;
@@ -167,8 +188,7 @@ template <typename T>
 inline constexpr bool is_volatile_v = is_volatile<T>::value;
 
 template <typename T>
-struct is_trivially_destructible
-    : bool_constant<__has_trivial_destructor(T)> {};
+struct is_trivially_destructible : bool_constant<__has_trivial_destructor(T)> {};
 
 template <typename T>
 inline constexpr bool is_trivially_destructible_v = is_trivially_destructible<T>::value;
@@ -195,6 +215,134 @@ template <typename T> struct decay { using type = typename detail::decay_selecto
 
 template <typename T>
 using decay_t = typename decay<T>::type;
+
+namespace detail {
+    template <typename T> struct in_integral_helper             : false_type {};
+    template <> struct in_integral_helper<bool>                 : true_type {};
+    template <> struct in_integral_helper<char>                 : true_type {};
+    template <> struct in_integral_helper<signed char>          : true_type {};
+    template <> struct in_integral_helper<unsigned char>        : true_type {};
+    template <> struct in_integral_helper<wchar_t>              : true_type {};
+    template <> struct in_integral_helper<char16_t>             : true_type {};
+    template <> struct in_integral_helper<char32_t>             : true_type {};
+    template <> struct in_integral_helper<short>                : true_type {};
+    template <> struct in_integral_helper<unsigned short>       : true_type {};
+    template <> struct in_integral_helper<int>                  : true_type {};
+    template <> struct in_integral_helper<unsigned int>         : true_type {};
+    template <> struct in_integral_helper<long>                 : true_type {};
+    template <> struct in_integral_helper<unsigned long>        : true_type {};
+    template <> struct in_integral_helper<long long>            : true_type {};
+    template <> struct in_integral_helper<unsigned long long>   : true_type {};
+}
+
+template <typename T> struct is_integral : detail::in_integral_helper<remove_cv_t<T>> {};
+
+template <typename T> 
+inline constexpr bool is_integral_v = is_integral<T>::value;
+
+template <typename T>
+concept Integral = is_integral_v<T>;
+
+namespace detail {
+    template <typename T> struct is_floating_point_helper       : false_type {};
+    template <> struct is_floating_point_helper<float>          : true_type {};
+    template <> struct is_floating_point_helper<double>         : true_type {};
+    template <> struct is_floating_point_helper<long double>    : true_type {};
+}
+
+template <typename T> struct is_floating_point : detail::is_floating_point_helper<remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_floating_point_v = is_floating_point<T>::value;
+
+template <typename T>
+concept FloatingPoint = is_floating_point_v<T>;
+
+template <typename T> struct is_arithmetic : disjunction<is_integral<T>, is_floating_point<T>> {};
+
+template <typename T>
+inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
+
+template <typename T>
+concept Arithmetic = is_arithmetic_v<T>;
+
+namespace detail {
+    template <typename T, bool = is_arithmetic_v<T>> struct is_signed_helper      : false_type {};
+    template <typename T> 
+    struct is_signed_helper<T, true> {
+        static constexpr bool _v = (T(-1) < T(0));
+        using type = bool_constant<_v>;
+    };
+    
+    template <typename T, bool = is_arithmetic_v<T>> struct is_unsigned_helper    : false_type {};
+    template <typename T> struct is_unsigned_helper<T, true> {
+        static constexpr bool _v = (T(0) < T(-1));
+        using type = bool_constant<_v>;
+    };
+}
+
+template <typename T> struct is_signed : detail::is_signed_helper<remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_signed_v = is_signed<T>::value;
+
+template <typename T> struct is_unsigned : detail::is_unsigned_helper<remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_unsigned_v = is_unsigned<T>::value;
+
+template <typename T> struct is_null_pointer : is_same<remove_cv_t<T>, mystl::nullptr_t> {};
+
+template <typename T>
+inline constexpr bool is_null_pointer_v = is_null_pointer<T>::value;
+
+namespace detail {
+    template <typename T> struct is_member_pointer_helper               : false_type {};
+    template <typename T, typename U> struct is_member_pointer_helper<T U::*>  : true_type {};
+}
+
+template <typename T> struct is_member_pointer : detail::is_member_pointer_helper<remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_member_pointer_v = is_member_pointer<T>::value;
+
+template <typename T> struct is_enum : bool_constant<__is_enum(T)> {};
+
+template <typename T>
+inline constexpr bool is_enum_v = is_enum<T>::value;
+
+template <typename T>
+struct is_scalar 
+    : disjunction<
+        is_arithmetic<T>,
+        is_pointer<T>,
+        is_member_pointer<T>,
+        is_enum<T>,
+        is_null_pointer<T>
+    > {};
+
+template <typename T>
+inline constexpr bool is_scalar_v = is_scalar<T>::value;
+
+template <typename T>
+concept Scalar = is_scalar_v<T>;
+
+template <typename T, typename... Args> struct is_constructible : bool_constant<__is_constructible(T, Args...)> {};
+
+template <typename T, typename... Args>
+inline constexpr bool is_constructible_v = is_constructible<T, Args...>::value;
+
+template <typename T, typename... Args> struct is_assignable : bool_constant<__is_assignable<T, Args...>> {};
+
+template <typename T, typename... Args>
+inline constexpr bool is_assignable_v = is_assignable<T, Args...>::value;
+
+template <typename From, typename To> struct is_convertible : bool_constant<__is_convertible(From, To)> {};
+
+template <typename From, typename To> 
+inline constexpr bool is_convertible_v = is_convertible<From, To>::value;
+
+template <typename T> struct is_destructible : bool_constant<__is_destructible(T)> {};
 
 template <typename T1, typename T2>
 struct pair;
