@@ -50,27 +50,27 @@ using void_t = void;
 using nullptr_t = decltype(nullptr);
 
 template <typename B>
-struct negation : bool_constant<!bool(B::value)> {};
+struct negation                         : bool_constant<!bool(B::value)> {};
 
 template <typename B>
 inline constexpr bool negation_v = negation<B>::value;
 
 template <typename...>
-struct conjunction : true_type {};
+struct conjunction                      : true_type {};
 template <typename B1>
-struct conjunction<B1> : B1 {};
+struct conjunction<B1>                  : B1 {};
 template <typename B1, typename... Bn>
-struct conjunction<B1, Bn...> : conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
+struct conjunction<B1, Bn...>           : conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
 
 template <typename... B>
 inline constexpr bool conjunction_v = conjunction<B...>::value;
 
 template <typename...>
-struct disjunction : false_type {};
+struct disjunction                      : false_type {};
 template <typename B1>
-struct disjunction<B1> : B1 {};
+struct disjunction<B1>                  : B1 {};
 template <typename B1, typename... Bn>
-struct disjunction<B1, Bn...> : conditional_t<bool(B1::value), B1, disjunction<Bn...>> {};
+struct disjunction<B1, Bn...>           : conditional_t<bool(B1::value), B1, disjunction<Bn...>> {};
 
 template <typename... B>
 inline constexpr bool disjunction_v = disjunction<B...>::value;
@@ -128,9 +128,9 @@ using remove_cvref_t = typename remove_cv<typename remove_reference<T>::type>::t
 
 namespace detail {
 template <typename T>
-struct is_pointer_helper : false_type {};
+struct is_pointer_helper        : false_type {};
 template <typename T>
-struct is_pointer_helper<T*> : true_type {};
+struct is_pointer_helper<T*>    : true_type {};
 }  // namespace detail
 
 template <typename T>
@@ -140,12 +140,12 @@ template <typename T>
 inline constexpr bool is_pointer_v = is_pointer<T>::value;
 
 template <typename T>
-struct is_lvalue_reference : false_type {};
+struct is_lvalue_reference      : false_type {};
 template <typename T>
-struct is_lvalue_reference<T&> : true_type {};
+struct is_lvalue_reference<T&>  : true_type {};
 
 template <typename T>
-struct is_rvalue_reference : false_type {};
+struct is_rvalue_reference      : false_type {};
 template <typename T>
 struct is_rvalue_reference<T&&> : true_type {};
 
@@ -156,11 +156,11 @@ template <typename T>
 inline constexpr bool is_rvalue_reference_v = is_rvalue_reference<T>::value;
 
 template <typename T>
-struct is_reference : false_type {};
+struct is_reference         : false_type {};
 template <typename T>
-struct is_reference<T&> : true_type {};
+struct is_reference<T&>     : true_type {};
 template <typename T>
-struct is_reference<T&&> : true_type {};
+struct is_reference<T&&>    : true_type {};
 
 template <typename T>
 inline constexpr bool is_reference_v = is_reference<T>::value;
@@ -235,9 +235,9 @@ template <typename T>
 using remove_extent_t = typename remove_extent<T>::type;
 
 template <typename T, typename U>
-struct is_same : false_type {};
+struct is_same          : false_type {};
 template <typename T>
-struct is_same<T, T> : true_type {};
+struct is_same<T, T>    : true_type {};
 
 template <typename T, typename U>
 inline constexpr bool is_same_v = is_same<T, U>::value;
@@ -249,17 +249,17 @@ template <typename T>
 struct is_void : bool_constant<is_void_v<T>> {};
 
 template <typename T>
-struct is_const : false_type {};
+struct is_const             : false_type {};
 template <typename T>
-struct is_const<const T> : true_type {};
+struct is_const<const T>    : true_type {};
 
 template <typename T>
 inline constexpr bool is_const_v = is_const<T>::value;
 
 template <typename T>
-struct is_volatile : false_type {};
+struct is_volatile              : false_type {};
 template <typename T>
-struct is_volatile<volatile T> : true_type {};
+struct is_volatile<volatile T>  : true_type {};
 
 template <typename T>
 inline constexpr bool is_volatile_v = is_volatile<T>::value;
@@ -271,11 +271,11 @@ template <typename T>
 inline constexpr bool is_trivially_destructible_v = is_trivially_destructible<T>::value;
 
 template <typename T>
-struct is_array : false_type {};
+struct is_array                 : false_type {};
 template <typename T>
-struct is_array<T[]> : true_type {};
+struct is_array<T[]>            : true_type {};
 template <typename T, size_t N>
-struct is_array<T[N]> : true_type {};
+struct is_array<T[N]>           : true_type {};
 
 template <typename T>
 struct is_nothrow_move_constructible : bool_constant<__is_nothrow_move_constructible(T)> {};
@@ -329,37 +329,37 @@ using decay_t = typename decay<T>::type;
 
 namespace detail {
 template <typename T>
-struct in_integral_helper : false_type {};
+struct in_integral_helper                       : false_type {};
 template <>
-struct in_integral_helper<bool> : true_type {};
+struct in_integral_helper<bool>                 : true_type {};
 template <>
-struct in_integral_helper<char> : true_type {};
+struct in_integral_helper<char>                 : true_type {};
 template <>
-struct in_integral_helper<signed char> : true_type {};
+struct in_integral_helper<signed char>          : true_type {};
 template <>
-struct in_integral_helper<unsigned char> : true_type {};
+struct in_integral_helper<unsigned char>        : true_type {};
 template <>
-struct in_integral_helper<wchar_t> : true_type {};
+struct in_integral_helper<wchar_t>              : true_type {};
 template <>
-struct in_integral_helper<char16_t> : true_type {};
+struct in_integral_helper<char16_t>             : true_type {};
 template <>
-struct in_integral_helper<char32_t> : true_type {};
+struct in_integral_helper<char32_t>             : true_type {};
 template <>
-struct in_integral_helper<short> : true_type {};
+struct in_integral_helper<short>                : true_type {};
 template <>
-struct in_integral_helper<unsigned short> : true_type {};
+struct in_integral_helper<unsigned short>       : true_type {};
 template <>
-struct in_integral_helper<int> : true_type {};
+struct in_integral_helper<int>                  : true_type {};
 template <>
-struct in_integral_helper<unsigned int> : true_type {};
+struct in_integral_helper<unsigned int>         : true_type {};
 template <>
-struct in_integral_helper<long> : true_type {};
+struct in_integral_helper<long>                 : true_type {};
 template <>
-struct in_integral_helper<unsigned long> : true_type {};
+struct in_integral_helper<unsigned long>        : true_type {};
 template <>
-struct in_integral_helper<long long> : true_type {};
+struct in_integral_helper<long long>            : true_type {};
 template <>
-struct in_integral_helper<unsigned long long> : true_type {};
+struct in_integral_helper<unsigned long long>   : true_type {};
 }  // namespace detail
 
 template <typename T>
@@ -373,13 +373,13 @@ concept Integral = is_integral_v<T>;
 
 namespace detail {
 template <typename T>
-struct is_floating_point_helper : false_type {};
+struct is_floating_point_helper                 : false_type {};
 template <>
-struct is_floating_point_helper<float> : true_type {};
+struct is_floating_point_helper<float>          : true_type {};
 template <>
-struct is_floating_point_helper<double> : true_type {};
+struct is_floating_point_helper<double>         : true_type {};
 template <>
-struct is_floating_point_helper<long double> : true_type {};
+struct is_floating_point_helper<long double>    : true_type {};
 }  // namespace detail
 
 template <typename T>
@@ -502,10 +502,10 @@ template <typename T1, typename T2>
 struct pair;
 
 template <typename T>
-struct is_pair : false_type {};
+struct is_pair                  : false_type {};
 
 template <typename T1, typename T2>
-struct is_pair<pair<T1, T2>> : true_type {};
+struct is_pair<pair<T1, T2>>    : true_type {};
 
 template <typename T>
 inline constexpr bool is_pair_v = is_pair<remove_cv_t<T>>::value;
