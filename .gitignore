@@ -4,6 +4,7 @@
 *.code-workspace
 *.swp
 *.swo
+*.clang-format
 
 # --- Build Output ---
 [Bb]uild/
