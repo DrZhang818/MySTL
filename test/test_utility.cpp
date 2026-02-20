@@ -5,6 +5,9 @@
 #include "type_traits.h"
 #include "utility.h"
 
+#define TEST_CASE(name) std::cout << "[RUNNING] " << name << "..." << std::endl;
+#define TEST_CASE_PASS(name) std::cout << "[PASSED] " << name << std::endl;
+
 struct Tracker {
     enum Type { NONE, LVALUE, RVALUE };
     Type last_op = NONE;
@@ -15,7 +18,7 @@ struct Tracker {
 };
 
 void test_move() {
-    std::cout << "Testing move..." << std::endl;
+    TEST_CASE("move");
 
     int x = 10;
     static_assert(mystl::is_rvalue_reference_v<decltype(mystl::move(x))>);
@@ -28,11 +31,11 @@ void test_move() {
     int&& ry = mystl::move(y);
     assert(ry == 100);
 
-    std::cout << "move tests passed." << std::endl;
+    TEST_CASE_PASS("move");
 }
 
 void test_forward() {
-    std::cout << "Testing forward..." << std::endl;
+    TEST_CASE("forward");
 
     Tracker t;
 
@@ -45,10 +48,12 @@ void test_forward() {
     auto&& res3 = mystl::forward<Tracker>(mystl::move(t));
     static_assert(mystl::is_rvalue_reference_v<decltype(res3)>);
 
-    std::cout << "forward tests passed." << std::endl;
+    TEST_CASE_PASS("forward");
 }
 
 void test_constexpr_noexcept() {
+    TEST_CASE("constexpr and noexcept");
+
     constexpr int x = 5;
     constexpr int y = mystl::move(x);
     static_assert(y == 5);
@@ -56,10 +61,12 @@ void test_constexpr_noexcept() {
     int z = 1;
     static_assert(noexcept(mystl::move(z)));
     static_assert(noexcept(mystl::forward<int>(z)));
+
+    TEST_CASE_PASS("constexpr and noexcept");
 }
 
 void test_exchange() {
-    std::cout << "Testing exchange..." << std::endl;
+    TEST_CASE("exchange");
 
     int a = 1;
     int b = mystl::exchange(a, 2);
@@ -79,11 +86,12 @@ void test_exchange() {
                   mystl::is_nothrow_assignable_v<int&, int>);
 
     static_assert(noexcept(mystl::exchange(a, 3)));
-    std::cout << "exchange tests passed." << std::endl;
+
+    TEST_CASE_PASS("exchange");
 }
 
 void test_to_underlying() {
-    std::cout << "Testing to_underlying..." << std::endl;
+    TEST_CASE("to_underlying");
 
     enum class Color : unsigned char { Red = 0, Blue = 255 };
     auto val = mystl::to_underlying(Color::Blue);
@@ -91,11 +99,11 @@ void test_to_underlying() {
     static_assert(std::is_same_v<decltype(val), unsigned char>);
     assert(val == 255);
 
-    std::cout << "to_underlying tests passed." << std::endl;
+    TEST_CASE_PASS("to_underlying");
 }
 
 void test_forward_like() {
-    std::cout << "Testing forward_like..." << std::endl;
+    TEST_CASE("forward_like");
 
     int x = 0;
     static_assert(mystl::is_same_v<decltype(mystl::forward_like<int&>(x)), int&>);
@@ -103,7 +111,58 @@ void test_forward_like() {
     static_assert(mystl::is_same_v<decltype(mystl::forward_like<int&&>(x)), int&&>);
     static_assert(mystl::is_same_v<decltype(mystl::forward_like<const int&&>(x)), const int&&>);
 
-    std::cout << "forward_like tests passed." << std::endl;
+    TEST_CASE_PASS("forward_like");
+}
+
+struct MoveOnly {
+    int data;
+    MoveOnly(int d) : data(d) {}
+    MoveOnly(const MoveOnly&) = delete;
+    MoveOnly& operator=(const MoveOnly&) = delete;
+    MoveOnly(MoveOnly&& other) noexcept : data(mystl::exchange(other.data, 0)) {}
+    MoveOnly& operator=(MoveOnly&& other) noexcept {
+        data = mystl::exchange(other.data, 0);
+        return *this;
+    }
+};
+
+void test_as_const() {
+    TEST_CASE("as_const");
+
+    int x = 10;
+    auto& cx = mystl::as_const(x);
+    static_assert(mystl::is_const_v<mystl::remove_reference_t<decltype(cx)>>,
+                  "as_const should return const ref)");
+    assert(&x == &cx);
+    // mystl::as_const(10);
+
+    TEST_CASE_PASS("as_const");
+}
+
+void test_swap_scalar() {
+    TEST_CASE("swap scalar");
+
+    int a = 1, b = 2;
+    mystl::swap(a, b);
+    assert(a == 2 && b == 1);
+
+    MoveOnly m1(10), m2(20);
+    mystl::swap(m1, m2);
+    assert(m1.data == 20 && m2.data == 10);
+
+    TEST_CASE_PASS("swap scalar");
+}
+
+void test_swap_array() {
+    TEST_CASE("swap array");
+
+    int arr1[3] = {1, 2, 3};
+    int arr2[3] = {4, 5, 6};
+    mystl::swap(arr1, arr2);
+    assert(arr1[0] == 4 && arr1[1] == 5 && arr1[2] == 6);
+    assert(arr2[0] == 1 && arr2[1] == 2 && arr2[2] == 3);
+
+    TEST_CASE_PASS("swap array");
 }
 
 int main() {
@@ -113,8 +172,9 @@ int main() {
     test_exchange();
     test_to_underlying();
     test_forward_like();
-
-    std::cout << "\n[SUCCESS]: Move and Forward are working correctly!" << std::endl;
+    test_as_const();
+    test_swap_scalar();
+    test_swap_array();
 
     return 0;
 }

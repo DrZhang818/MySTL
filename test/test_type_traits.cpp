@@ -82,9 +82,6 @@ int main() {
     int x = 42;
     wrapper(x);
     wrapper(42);
-    wrapper(mystl::move(x));
-
-    static_assert(mystl::is_same_v<decltype(mystl::move(x)), int&&>, "move return type test failed");
 
     std::cout << "\nAll Compile-Time Assertions Passed!" << std::endl;
     

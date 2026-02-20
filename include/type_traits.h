@@ -551,7 +551,6 @@ template <typename T>
              detail::can_destruct<mystl::remove_all_extents_t<T>>)
 struct is_destructible<T> : mystl::true_type {};
 
-namespace detail {
 template <typename T, typename U>
 struct apply_cv {
     using type = U;
@@ -572,6 +571,31 @@ struct apply_cv<const volatile T, U> {
 template <typename T, typename U>
 using apply_cv_t = typename apply_cv<T, U>::type;
 
+template <typename T>
+struct add_const {
+    using type = const T;
+};
+
+template <typename T>
+using add_const_t = typename add_const<T>::type;
+
+template <typename T>
+struct add_volatile {
+    using type = volatile T;
+};
+
+template <typename T>
+using add_volatile_t = typename add_volatile<T>::type;
+
+template <typename T>
+struct add_cv {
+    using type = const volatile T;
+};
+
+template <typename T>
+using add_cv_t = typename add_cv<T>::type;
+
+namespace detail {
 template <typename T>
 struct make_unsigned_helper {};
 
@@ -658,7 +682,7 @@ struct make_unsigned {
     using raw_t = typename detail::make_signed_helper<remove_cv_t<base_t>>::type;
 
    public:
-    using type = detail::apply_cv_t<base_t, raw_t>;
+    using type = apply_cv_t<base_t, raw_t>;
 };
 
 template <typename T>
@@ -671,7 +695,7 @@ struct make_signed {
     using raw_t = typename detail::make_signed_helper<remove_cv_t<base_t>>::type;
 
    public:
-    using type = detail::apply_cv_t<base_t, raw_t>;
+    using type = apply_cv_t<base_t, raw_t>;
 };
 
 template <typename T>
