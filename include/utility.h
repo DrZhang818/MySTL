@@ -81,8 +81,10 @@ constexpr void swap(T& a, T& b) noexcept(is_nothrow_move_constructible_v<T> &&
     b = mystl::move(temp);
 }
 
-template <typename T, size_t N>
-    requires requires(T& x, T& y) { mystl::swap(x, y); }
+template <typename T>
+concept Swappable = requires(T& a, T& b) { mystl::swap(a, b); };
+
+template <Swappable T, size_t N>
 constexpr void swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(mystl::swap(a[0], b[0]))) {
     for (size_t i = 0; i < N; ++i) { mystl::swap(a[i], b[i]); }
 }
@@ -159,6 +161,45 @@ constexpr T byteswap(T value) noexcept {
         static_assert(sizeof(T) <= 8, "byteswap only supports integral types up to 64 bits");
     }
 }
+
+template <typename T, T... Ints>
+struct integer_sequence {
+    using value_type = T;
+    static constexpr size_t size() noexcept { return sizeof...(Ints); }
+};
+
+template <size_t... Ints>
+using index_sequence = integer_sequence<size_t, Ints...>;
+
+namespace detail {
+template <typename T, size_t N, T... Ints>
+struct make_seq_impl : make_seq_impl<T, N - 1, static_cast<T>(N - 1), Ints...> {};
+
+template <typename T, T... Ints>
+struct make_seq_impl<T, 0, Ints...> {
+    using type = integer_sequence<T, Ints...>;
+};
+}  // namespace detail
+
+#if defined(__clang__) || defined(_MSC_VER)
+template <typename T, T N>
+using make_integer_sequence = __make_integer_seq<integer_sequence, T, N>;
+
+#elif defined(__GNUC__) && __GNUC__ >= 8
+template <typename T, T N>
+using make_integer_sequence = integer_sequence<T, __integer_pack(N)...>;
+
+#else
+template <typename T, T N>
+using make_integer_sequence = typename detail::make_seq_impl<T, N>::type;
+#endif
+
+template <size_t N>
+using make_index_sequence = make_integer_sequence<size_t, N>;
+
+template <typename... Args>
+using index_sequence_for = make_index_sequence<sizeof...(Args)>;
+
 
 }  // namespace mystl
 

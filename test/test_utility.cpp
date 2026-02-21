@@ -165,6 +165,27 @@ void test_swap_array() {
     TEST_CASE_PASS("swap array");
 }
 
+void test_make_index_sequence() {
+    TEST_CASE("make_index_sequence");
+
+    static_assert(mystl::is_same_v<
+        mystl::make_index_sequence<3>,
+        mystl::index_sequence<0, 1, 2>
+    >, "make_index_sequence failed");
+
+    static_assert(mystl::is_same_v<
+        mystl::make_index_sequence<0>,
+        mystl::index_sequence<>
+    >, "make_index_sequence<0> failed");
+
+    static_assert(mystl::is_same_v<
+        mystl::index_sequence_for<int, double, char>,
+        mystl::index_sequence<0, 1, 2>
+    >, "index_sequence_for failed");
+
+    TEST_CASE_PASS("make_index_sequence");
+}
+
 int main() {
     test_move();
     test_forward();
