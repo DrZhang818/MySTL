@@ -7,6 +7,10 @@
 #include "type_traits.h"
 
 namespace mystl {
+
+template <typename T1, typename T2>
+struct pair;
+
 template <typename T>
 constexpr remove_reference_t<T>&& move(T&& arg) noexcept {
     return static_cast<remove_reference_t<T>&&>(arg);
@@ -81,12 +85,20 @@ constexpr void swap(T& a, T& b) noexcept(is_nothrow_move_constructible_v<T> &&
     b = mystl::move(temp);
 }
 
-template <typename T>
-concept Swappable = requires(T& a, T& b) { mystl::swap(a, b); };
-
-template <Swappable T, size_t N>
+template <typename T, size_t N>
+    requires requires(T& a, T& b) { mystl::swap(a, b); }
 constexpr void swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(mystl::swap(a[0], b[0]))) {
-    for (size_t i = 0; i < N; ++i) { mystl::swap(a[i], b[i]); }
+    for (size_t i = 0; i < N; ++i) {
+        mystl::swap(a[i], b[i]);
+    }
+}
+
+template <Swappable T1, Swappable T2>
+constexpr void swap(pair<T1, T2>& x, pair<T1, T2>& y) noexcept(is_nothrow_swappable_v<T1> &&
+                                                               is_nothrow_swappable_v<T2>) {
+    using mystl::swap;
+    swap(x.first, y.first);
+    swap(x.second, y.second);
 }
 
 template <typename T, typename U>
@@ -200,6 +212,215 @@ using make_index_sequence = make_integer_sequence<size_t, N>;
 template <typename... Args>
 using index_sequence_for = make_index_sequence<sizeof...(Args)>;
 
+struct in_place_t {
+    explicit in_place_t() = default;
+};
+inline constexpr in_place_t in_place{};
+
+template <typename T>
+struct in_place_type_t {
+    explicit in_place_type_t() = default;
+};
+
+template <typename T>
+inline constexpr in_place_type_t<T> in_place_type{};
+
+template <size_t I>
+struct in_place_index_t {
+    explicit in_place_index_t() = default;
+};
+
+template <size_t I>
+inline constexpr in_place_index_t<I> in_place_index{};
+
+template <typename T1, typename T2>
+struct pair {
+    using first_type = T1;
+    using second_type = T2;
+
+    T1 first;
+    T2 second;
+
+    constexpr pair()
+        requires(is_default_constructible_v<T1> && is_default_constructible_v<T2>)
+        : first(), second() {};
+
+    constexpr explicit(!is_convertible_v<const T1&, T1> || !is_convertible_v<const T2&, T2>)
+        pair(const T1& x, const T2& y)
+        requires(is_copy_constructible_v<T1> && is_copy_constructible_v<T2>)
+        : first(x), second(y) {}
+
+    template <typename U1, typename U2>
+        requires(is_constructible_v<T1, U1> && is_constructible_v<T2, U2>)
+    constexpr explicit(!is_convertible_v<U1, T1> || !is_convertible_v<U2, T2>)  //
+        pair(U1&& x, U2&& y)
+        : first(mystl::forward<U1>(x)), second(mystl::forward<U2>(y)) {}
+
+    constexpr pair(const pair&) = default;
+    constexpr pair(pair&&) = default;
+
+    constexpr pair& operator=(const pair&) = default;
+    constexpr pair& operator=(pair&&) = default;
+
+    template <typename U1, typename U2>
+        requires(is_constructible_v<T1, const U1&> && is_constructible_v<T2, const U2&>)
+    constexpr explicit(!is_convertible_v<const U1&, T1> || !is_convertible_v<const U2&, T2>)
+        pair(const pair<U1, U2>& p)
+        : first(p.first), second(p.second) {}
+
+    template <typename U1, typename U2>
+        requires(is_constructible_v<T1, U1 &&> && is_constructible_v<T2, U2 &&>)
+    constexpr explicit(!is_convertible_v<U1&&, T1> || !is_convertible_v<U2&&, T2>)
+        pair(pair<U1, U2>&& p)
+        : first(mystl::forward<U1>(p.first)), second(mystl::forward<U2>(p.second)) {}
+
+    template <typename U1, typename U2>
+        requires(is_assignable_v<T1&, const U1&> && is_assignable_v<T2&, const U2&>)
+    constexpr pair& operator=(const pair<U1, U2>& p) {
+        first = p.first;
+        second = p.second;
+        return *this;
+    }
+
+    template <typename U1, typename U2>
+        requires(is_assignable_v<T1&, U1 &&> && is_assignable_v<T2&, U2 &&>)
+    constexpr pair& operator=(pair<U1, U2>&& p) {
+        first = mystl::forward<U1>(p.first);
+        second = mystl::forward<U2>(p.second);
+        return *this;
+    }
+};
+
+template <typename T1, typename T2, typename U1, typename U2>
+constexpr bool operator==(const pair<T1, T2>& lhs, const pair<U1, U2>& rhs) {
+    return lhs.first == rhs.first && lhs.second == rhs.second;
+}
+
+template <typename T1, typename T2, typename U1, typename U2>
+constexpr auto operator<=>(const pair<T1, T2>& lhs, const pair<U1, U2>& rhs)
+    -> std::common_comparison_category_t<decltype(lhs.first <=> rhs.first),
+                                         decltype(lhs.second <=> rhs.second)> {
+    if (auto cmp = lhs.first <=> rhs.first; cmp != 0) {
+        return cmp;
+    }
+    return lhs.second <=> rhs.second;
+}
+
+template <typename T>
+struct tuple_size;
+
+template <typename T1, typename T2>
+struct tuple_size<pair<T1, T2>> : integral_constant<size_t, 2> {};
+
+template <typename T1, typename T2>
+struct tuple_size<const pair<T1, T2>> : integral_constant<size_t, 2> {};
+
+template <size_t I, typename T>
+struct tuple_element;
+
+template <typename T1, typename T2>
+struct tuple_element<0, pair<T1, T2>> {
+    using type = T1;
+};
+
+template <typename T1, typename T2>
+struct tuple_element<1, pair<T1, T2>> {
+    using type = T2;
+};
+
+template <size_t I, typename T>
+using tuple_element_t = typename tuple_element<I, T>::type;
+
+template <size_t I, typename T1, typename T2>
+struct tuple_element<I, const pair<T1, T2>> {
+    using type = add_const_t<tuple_element_t<I, pair<T1, T2>>>;
+};
+
+template <size_t I, typename T1, typename T2>
+constexpr auto& get(pair<T1, T2>& p) noexcept {
+    static_assert(I < 2, "Index out of bounds in pair::get");
+    if constexpr (I == 0) {
+        return p.first;
+    } else {
+        return p.second;
+    }
+}
+
+template <size_t I, typename T1, typename T2>
+constexpr const auto& get(const pair<T1, T2>& p) noexcept {
+    static_assert(I < 2, "Index out of bounds in pair::get");
+    if constexpr (I == 0) {
+        return p.first;
+    } else {
+        return p.second;
+    }
+}
+
+template <size_t I, typename T1, typename T2>
+constexpr auto&& get(pair<T1, T2>&& p) noexcept {
+    static_assert(I < 2, "Index out of bounds in pair::get");
+    if constexpr (I == 0) {
+        return mystl::move(p.first);
+    } else {
+        return mystl::move(p.second);
+    }
+}
+
+template <size_t I, typename T1, typename T2>
+constexpr const auto&& get(const pair<T1, T2>&& p) noexcept {
+    static_assert(I < 2, "Index out of bounds in pair::get");
+    if constexpr (I == 0) {
+        return mystl::move(p.first);
+    } else {
+        return mystl::move(p.second);
+    }
+}
+
+template <typename T, typename T1, typename T2>
+constexpr T& get(pair<T1, T2>& p) noexcept {
+    static_assert(is_same_v<T, T1> ^ is_same_v<T, T2>, "Type T must occur exactly once in pair");
+    if constexpr (is_same_v<T, T1>) {
+        return p.first;
+    } else {
+        return p.second;
+    }
+}
+
+template <typename T, typename T1, typename T2>
+constexpr const T& get(const pair<T1, T2>& p) noexcept {
+    static_assert(is_same_v<T, T1> ^ is_same_v<T, T2>, "Type T must occur exactly once in pair");
+    if constexpr (is_same_v<T, T1>) {
+        return p.first;
+    } else {
+        return p.second;
+    }
+}
+
+template <typename T, typename T1, typename T2>
+constexpr T&& get(pair<T1, T2>&& p) noexcept {
+    static_assert(is_same_v<T, T1> ^ is_same_v<T, T2>, "Type T must occur exactly once in pair");
+    if constexpr (is_same_v<T, T1>) {
+        return mystl::move(p.first);
+    } else {
+        return mystl::move(p.second);
+    }
+}
+
+template <typename T, typename T1, typename T2>
+constexpr const T&& get(const pair<T1, T2>&& p) noexcept {
+    static_assert(is_same_v<T, T1> ^ is_same_v<T, T2>, "Type T must occur exactly once in pair");
+    if constexpr (is_same_v<T, T1>) {
+        return mystl::move(p.first);
+    } else {
+        return mystl::move(p.second);
+    }
+}
+
+template <typename T1, typename T2>
+constexpr auto make_pair(T1&& x, T2&& y) {
+    using R = pair<unwrap_ref_decay_t<T1>, unwrap_ref_decay_t<T2>>;
+    return R(mystl::forward<T1>(x), mystl::forward<T2>(y));
+}
 
 }  // namespace mystl
 

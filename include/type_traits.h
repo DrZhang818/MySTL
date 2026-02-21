@@ -336,6 +336,25 @@ struct decay {
 template <typename T>
 using decay_t = typename decay<T>::type;
 
+template <typename T>
+struct unwrap_reference {
+    using type = T;
+};
+
+template <typename T>
+struct reference_wrapper;
+
+template <typename T>
+struct unwrap_reference<reference_wrapper<T>> {
+    using type = T&;
+};
+
+template <typename T>
+using unwrap_reference_t = typename unwrap_reference<T>::type;
+
+template <typename T>
+using unwrap_ref_decay_t = unwrap_reference_t<decay_t<T>>;
+
 namespace detail {
 template <typename T>
 struct in_integral_helper : false_type {};
@@ -481,6 +500,12 @@ template <typename T, typename... Args>
 inline constexpr bool is_constructible_v = is_constructible<T, Args...>::value;
 
 template <typename T>
+struct is_default_constructible : is_constructible<T> {};
+
+template <typename T>
+inline constexpr bool is_default_constructible_v = is_default_constructible<T>::value;
+
+template <typename T>
 struct is_copy_constructible : is_constructible<T, const T&> {};
 
 template <typename T>
@@ -550,6 +575,27 @@ template <typename T>
     requires(!mystl::is_reference_v<T> && !mystl::is_void_v<T> && !mystl::is_function_v<T> &&
              detail::can_destruct<mystl::remove_all_extents_t<T>>)
 struct is_destructible<T> : mystl::true_type {};
+
+template <typename T>
+constexpr void swap(T& a, T& b) noexcept(is_nothrow_move_constructible_v<T> &&
+                                         is_nothrow_move_assignable_v<T>);
+
+template <typename T>
+    struct is_swappable : bool_constant < requires(T& a, T& b) {
+    mystl::swap(a, b);
+}>{};
+
+template <typename T>
+inline constexpr bool is_swappable_v = is_swappable<T>::value;
+
+template <typename T>
+struct is_nothrow_swappable : bool_constant<noexcept(mystl::swap(declval<T&>(), declval<T&>()))> {};
+
+template <typename T>
+inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<T>::value;
+
+template <typename T>
+concept Swappable = is_swappable_v<T>;
 
 template <typename T, typename U>
 struct apply_cv {
@@ -677,11 +723,11 @@ struct make_signed_helper<wchar_t> {
 
 template <typename T>
 struct make_unsigned {
-   private:
+private:
     using base_t = conditional_t<is_enum_v<T>, __underlying_type(T), T>;
     using raw_t = typename detail::make_signed_helper<remove_cv_t<base_t>>::type;
 
-   public:
+public:
     using type = apply_cv_t<base_t, raw_t>;
 };
 
@@ -690,11 +736,11 @@ using make_unsigned_t = typename make_unsigned<T>::type;
 
 template <typename T>
 struct make_signed {
-   private:
+private:
     using base_t = conditional_t<is_enum_v<T>, __underlying_type(T), T>;
     using raw_t = typename detail::make_signed_helper<remove_cv_t<base_t>>::type;
 
-   public:
+public:
     using type = apply_cv_t<base_t, raw_t>;
 };
 
