@@ -1,5 +1,5 @@
 #ifndef MYSTL_HADEMADE_UTILITY_H_
-#define _MYSTL_HADEMADE_UTILITY_H_
+#define MYSTL_HADEMADE_UTILITY_H_
 
 #include <compare>
 #include <limits>
@@ -67,7 +67,10 @@ constexpr auto&& forward_like(U&& arg) noexcept {
         }
     }
 }
+}  // namespace mystl
 
+#include "concepts.h"
+namespace mystl {
 template <typename T>
 constexpr add_const_t<T>& as_const(T& arg) noexcept {
     return arg;
@@ -93,7 +96,7 @@ constexpr void swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(mystl::swap(a[0], b[
     }
 }
 
-template <Swappable T1, Swappable T2>
+template <swappable T1, swappable T2>
 constexpr void swap(pair<T1, T2>& x, pair<T1, T2>& y) noexcept(is_nothrow_swappable_v<T1> &&
                                                                is_nothrow_swappable_v<T2>) {
     using mystl::swap;

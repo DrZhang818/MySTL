@@ -166,9 +166,6 @@ template <typename T>
 inline constexpr bool is_reference_v = is_reference<T>::value;
 
 template <typename T>
-concept Reference = is_reference_v<T>;
-
-template <typename T>
 struct add_pointer {
     using type = remove_reference_t<T>*;
 };
@@ -248,6 +245,12 @@ inline constexpr bool is_same_v = is_same<T, U>::value;
 template <typename T>
 inline constexpr bool is_void_v = is_same_v<remove_cv_t<T>, void>;
 
+template <typename Base, typename Derived>
+struct is_base_of : bool_constant<__is_base_of(Base, Derived)> {};
+
+template <typename Base, typename Derived>
+inline constexpr bool is_base_of_v = is_base_of<Base, Derived>::value;
+
 template <typename T>
 struct is_void : bool_constant<is_void_v<T>> {};
 
@@ -279,6 +282,12 @@ template <typename T>
 struct is_array<T[]> : true_type {};
 template <typename T, size_t N>
 struct is_array<T[N]> : true_type {};
+
+template <typename T, typename... Args>
+struct is_nothrow_constructible : bool_constant<__is_nothrow_constructible(T, Args...)> {};
+
+template <typename T, typename... Args>
+inline constexpr bool is_nothrow_constructible_v = is_nothrow_constructible<T, Args...>::value;
 
 template <typename T>
 struct is_nothrow_move_constructible : bool_constant<__is_nothrow_constructible(T, T&&)> {};
@@ -396,9 +405,6 @@ struct is_integral : detail::in_integral_helper<remove_cv_t<T>> {};
 template <typename T>
 inline constexpr bool is_integral_v = is_integral<T>::value;
 
-template <typename T>
-concept Integral = is_integral_v<T>;
-
 namespace detail {
 template <typename T>
 struct is_floating_point_helper : false_type {};
@@ -417,16 +423,18 @@ template <typename T>
 inline constexpr bool is_floating_point_v = is_floating_point<T>::value;
 
 template <typename T>
-concept FloatingPoint = is_floating_point_v<T>;
-
-template <typename T>
 struct is_arithmetic : disjunction<is_integral<T>, is_floating_point<T>> {};
 
 template <typename T>
 inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
 
 template <typename T>
-concept Arithmetic = is_arithmetic_v<T>;
+struct is_object : bool_constant<
+    !is_reference_v<T> && !is_function_v<T> && !is_void_v<T>
+> {};
+
+template <typename T>
+inline constexpr bool is_object_v = is_object<T>::value;
 
 namespace detail {
 template <typename T, bool = is_arithmetic_v<T>>
@@ -489,9 +497,6 @@ struct is_scalar : disjunction<is_arithmetic<T>, is_pointer<T>, is_member_pointe
 
 template <typename T>
 inline constexpr bool is_scalar_v = is_scalar<T>::value;
-
-template <typename T>
-concept Scalar = is_scalar_v<T>;
 
 template <typename T, typename... Args>
 struct is_constructible : bool_constant<__is_constructible(T, Args...)> {};
@@ -576,6 +581,25 @@ template <typename T>
              detail::can_destruct<mystl::remove_all_extents_t<T>>)
 struct is_destructible<T> : mystl::true_type {};
 
+namespace detail {
+template <typename T>
+struct is_nothrow_destructible_helper {
+    static constexpr bool value = noexcept(mystl::declval<T&>().~T());
+};
+}  // namespace detail
+
+template <typename T>
+struct is_nothrow_destructible : bool_constant<detail::is_nothrow_destructible_helper<T>::value> {};
+
+template <typename T>
+struct is_nothrow_destructible<T&> : true_type {};
+
+template <typename T>
+struct is_nothrow_destructible<T&&> : true_type {};
+
+template <typename T>
+inline constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<T>::value;
+
 template <typename T>
 constexpr void swap(T& a, T& b) noexcept(is_nothrow_move_constructible_v<T> &&
                                          is_nothrow_move_assignable_v<T>);
@@ -593,9 +617,6 @@ struct is_nothrow_swappable : bool_constant<noexcept(mystl::swap(declval<T&>(), 
 
 template <typename T>
 inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<T>::value;
-
-template <typename T>
-concept Swappable = is_swappable_v<T>;
 
 template <typename T, typename U>
 struct apply_cv {
@@ -758,9 +779,6 @@ struct is_pair<pair<T1, T2>> : true_type {};
 
 template <typename T>
 inline constexpr bool is_pair_v = is_pair<remove_cv_t<T>>::value;
-
-template <typename T>
-concept Pair = is_pair_v<T>;
 
 }  // namespace mystl
 

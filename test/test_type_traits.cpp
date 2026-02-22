@@ -1,13 +1,7 @@
 #include <iostream>
-#include "type_traits.h"
 
-namespace mystl {
-    template <typename T1, typename T2>
-    struct pair {
-        T1 first;
-        T2 second;
-    };
-}
+#include "type_traits.h"
+#include "utility.h"
 
 struct TrivialStruct {
     int x;
@@ -39,42 +33,58 @@ int main() {
     static_assert(mystl::true_type::value == true, "true_type test failed");
     static_assert(mystl::false_type::value == false, "false_type test failed");
 
-    static_assert(mystl::is_same_v<mystl::conditional_t<true, int, float>, int> == true, "conditional test 1 failed");
-    static_assert(mystl::is_same_v<mystl::conditional_t<false, int, float>, float> == true, "conditional test 2 failed");
+    static_assert(mystl::is_same_v<mystl::conditional_t<true, int, float>, int> == true,
+                  "conditional test 1 failed");
+    static_assert(mystl::is_same_v<mystl::conditional_t<false, int, float>, float> == true,
+                  "conditional test 2 failed");
 
     static_assert(mystl::is_same_v<int, int> == true, "is_same<int, int> test failed");
     static_assert(mystl::is_same_v<int, float> == false, "is_same<int, float> test failed");
 
     std::cout << "Basic Helpers (true_type, false_type, is_same) tests passed!" << std::endl;
 
-    static_assert(mystl::is_same_v<mystl::remove_reference_t<int>,int>, "remove_reference<int> test failed");
-    static_assert(mystl::is_same_v<mystl::remove_reference_t<int&>, int>, "remove_reference<int&> test failed");
-    static_assert(mystl::is_same_v<mystl::remove_reference_t<int&&>, int>, "remove_reference<int&&> test failed");
+    static_assert(mystl::is_same_v<mystl::remove_reference_t<int>, int>,
+                  "remove_reference<int> test failed");
+    static_assert(mystl::is_same_v<mystl::remove_reference_t<int&>, int>,
+                  "remove_reference<int&> test failed");
+    static_assert(mystl::is_same_v<mystl::remove_reference_t<int&&>, int>,
+                  "remove_reference<int&&> test failed");
 
-    static_assert(mystl::is_same_v<mystl::remove_const_t<const int>, int>, "remove_const<const int> test failed");
-    static_assert(mystl::is_same_v<mystl::remove_volatile_t<volatile int>, int>, "remove_volatile<volatile int> test failed");
+    static_assert(mystl::is_same_v<mystl::remove_const_t<const int>, int>,
+                  "remove_const<const int> test failed");
+    static_assert(mystl::is_same_v<mystl::remove_volatile_t<volatile int>, int>,
+                  "remove_volatile<volatile int> test failed");
 
-    static_assert(mystl::is_same_v<mystl::remove_cv_t<const volatile int>, int>, "remove_cv<const volatile int> test failed");
+    static_assert(mystl::is_same_v<mystl::remove_cv_t<const volatile int>, int>,
+                  "remove_cv<const volatile int> test failed");
 
-    std::cout << "Type Modifications (remove_reference, remove_const, remove_volatile, remove_cv) tests passed!" << std::endl;
+    std::cout << "Type Modifications (remove_reference, remove_const, remove_volatile, remove_cv) "
+                 "tests passed!"
+              << std::endl;
 
-    static_assert(mystl::is_pair_v<mystl::pair<int, double>> == true, "is_pair<pair<int, double>> test failed");
+    static_assert(mystl::is_pair_v<mystl::pair<int, double>> == true,
+                  "is_pair<pair<int, double>> test failed");
     static_assert(mystl::is_pair_v<int> == false, "is_pair<int> negative test failed");
 
-    static_assert(mystl::is_pair_v<const mystl::pair<int, int>> == true, "is_pair<const pair<int, int>> test failed");
+    static_assert(mystl::is_pair_v<const mystl::pair<int, int>> == true,
+                  "is_pair<const pair<int, int>> test failed");
 
     std::cout << "is_pair tests passed!" << std::endl;
 
     static_assert(mystl::is_trivially_destructible_v<int> == true, "int should be trivial");
-    static_assert(mystl::is_trivially_destructible_v<TrivialStruct> == true, "Strcut should be trivial");
-    static_assert(mystl::is_trivially_destructible_v<NonTrivialStruct> == false, "Class with destructor should NOT be trivial");
+    static_assert(mystl::is_trivially_destructible_v<TrivialStruct> == true,
+                  "Strcut should be trivial");
+    static_assert(mystl::is_trivially_destructible_v<NonTrivialStruct> == false,
+                  "Class with destructor should NOT be trivial");
 
     std::cout << "Compiler Intrinsics (is_trivially_destructible) tests passed!" << std::endl;
 
     static_assert(mystl::is_same_v<mystl::decay_t<int&>, int>, "decay<int&> should be int");
-    static_assert(mystl::is_same_v<mystl::decay_t<const int&>, int>, "decay<const int&> should be int");
+    static_assert(mystl::is_same_v<mystl::decay_t<const int&>, int>,
+                  "decay<const int&> should be int");
     static_assert(mystl::is_same_v<mystl::decay_t<int[5]>, int*>, "decay<int[5]> should be int*");
-    static_assert(mystl::is_same_v<mystl::decay_t<int(int)>, int(*)(int)>, "decay<int(int)> should be int(*)(int)");
+    static_assert(mystl::is_same_v<mystl::decay_t<int(int)>, int (*)(int)>,
+                  "decay<int(int)> should be int(*)(int)");
 
     std::cout << "decay tests passed!" << std::endl;
 
@@ -84,6 +94,6 @@ int main() {
     wrapper(42);
 
     std::cout << "\nAll Compile-Time Assertions Passed!" << std::endl;
-    
+
     return 0;
 }
