@@ -81,6 +81,52 @@ concept equality_comparable =
 template <typename T>
 concept regular = semiregular<T> && equality_comparable<T>;
 
+namespace detail {
+template <typename T>
+concept boolean_testable_impl = convertible_to<T, bool>;
+}  // namespace detail
+
+template <typename T>
+concept boolean_testable = detail::boolean_testable_impl<T> && requires(T&& t) {
+    { !mystl::forward<T>(t) } -> detail::boolean_testable_impl;
+};
+
+template <typename T, typename U>
+concept weakly_equality_comparable_with =
+    requires(const remove_reference_t<T>& t, const remove_reference_t<U>& u) {
+        { t == u } -> boolean_testable;
+        { t != u } -> boolean_testable;
+        { u == t } -> boolean_testable;
+        { u != t } -> boolean_testable;
+    };
+
+template <typename T>
+concept equality_comparable = weakly_equality_comparable_with<T, T>;
+
+template <typename T>
+concept totally_ordered =
+    equality_comparable<T> && requires(const remove_reference_t<T>& a, remove_reference_t<T>& b) {
+        { a < b } -> boolean_testable;
+        { a > b } -> boolean_testable;
+        { a <= b } -> boolean_testable;
+        { a >= b } -> boolean_testable;
+    };
+
+template <typename F, typename... Args>
+concept invocable = requires(F&& f, Args&&... args) {
+    mystl::invoke(mystl::forward<F>(f), mystl::forward<Args>(args)...);
+};
+
+template <typename F, typename... Args>
+concept regular_invocable = invocable<F, Args...>;
+
+template <typename F, typename... Args>
+concept predicate =
+    regular_invocable<F, Args...> &&
+    boolean_testable<decltype(mystl::invoke(mystl::declval<F>(), mystl::declval<Args>()...))>;
+
+
+
 }  // namespace mystl
 
 #endif

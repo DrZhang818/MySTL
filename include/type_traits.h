@@ -429,9 +429,7 @@ template <typename T>
 inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
 
 template <typename T>
-struct is_object : bool_constant<
-    !is_reference_v<T> && !is_function_v<T> && !is_void_v<T>
-> {};
+struct is_object : bool_constant<!is_reference_v<T> && !is_function_v<T> && !is_void_v<T>> {};
 
 template <typename T>
 inline constexpr bool is_object_v = is_object<T>::value;
@@ -473,10 +471,25 @@ template <typename T>
 inline constexpr bool is_null_pointer_v = is_null_pointer<T>::value;
 
 namespace detail {
+
 template <typename T>
 struct is_member_pointer_helper : false_type {};
+
 template <typename T, typename U>
 struct is_member_pointer_helper<T U::*> : true_type {};
+
+template <typename T>
+struct is_member_function_pointer_helper : false_type {};
+
+template <typename T, typename U>
+struct is_member_function_pointer_helper<T U::*> : is_function<T> {};
+
+template <typename T>
+struct is_member_object_pointer_helper : false_type {};
+
+template <typename T, typename U>
+struct is_member_object_pointer_helper<T U::*> : bool_constant<!is_function<T>> {};
+
 }  // namespace detail
 
 template <typename T>
@@ -484,6 +497,18 @@ struct is_member_pointer : detail::is_member_pointer_helper<remove_cv_t<T>> {};
 
 template <typename T>
 inline constexpr bool is_member_pointer_v = is_member_pointer<T>::value;
+
+template <typename T>
+struct is_member_function_pointer : detail::is_member_function_pointer_helper<remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_member_function_pointer_v = is_member_function_pointer<T>::value;
+
+template <typename T>
+struct is_member_object_pointer : detail:is_member_object_pointer_helper<remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool is_member_object_pointer_v = is_member_object_pointer<T>::value;
 
 template <typename T>
 struct is_enum : bool_constant<__is_enum(T)> {};
