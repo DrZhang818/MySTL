@@ -1,6 +1,7 @@
 #ifndef MYSTL_HANDMADE_CONCEPTS_H_
 #define MYSTL_HANDMADE_CONCEPTS_H_
 
+#include "functional.h"
 #include "type_traits.h"
 #include "utility.h"
 
@@ -72,13 +73,6 @@ template <typename T>
 concept semiregular = copyable<T> && default_initializable<T>;
 
 template <typename T>
-concept equality_comparable =
-    requires(const remove_reference_t<T>& a, const remove_reference_t<T>& b) {
-        { a == b } -> convertible_to<bool>;
-        { a != b } -> convertible_to<bool>;
-    };
-
-template <typename T>
 concept regular = semiregular<T> && equality_comparable<T>;
 
 namespace detail {
@@ -125,7 +119,15 @@ concept predicate =
     regular_invocable<F, Args...> &&
     boolean_testable<decltype(mystl::invoke(mystl::declval<F>(), mystl::declval<Args>()...))>;
 
+template <typename R, typename T, typename U>
+concept relation =
+    predicate<R, T, T> && predicate<R, U, U> && predicate<R, T, U> && predicate<R, U, T>;
 
+template <typename R, typename T, typename U>
+concept equivalence_relation = relation<R, T, U>;
+
+template <typename R, typename T, typename U>
+concept strict_weak_order = relation<R, T, U>;
 
 }  // namespace mystl
 
